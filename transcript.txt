@@ -1,0 +1,61 @@
+User:
+Build an interactive visualization of LSH banding for MinHash signatures.
+
+Requirements:
+- One S-curve chart: P(candidate pair) = 1 - (1 - t^r)^b, with t (pair similarity) on the x-axis.
+- Three sliders: bands b (1-50, default 20), rows per band r (1-15, default 5), and pair similarity t (0-1, default 0.8).
+- A marker on the curve at the chosen t.
+- Three live readouts: signature length b*r, approximate threshold (1/b)^(1/r), and P(candidate) at the chosen t.
+- Keep it clean and compact, with no extra text inside the widget.
+
+After the visual, teach me in 5 lines or fewer:
+1. What increasing r does (false positives vs. false negatives).
+2. What increasing b does.
+3. Verify these two cases: b=20, r=5 gives about 99.96% at t=0.8 and about 4.7% at t=0.3.
+4. One counterexample where a pair above the threshold is still missed.
+
+Then give me a 3-question midterm-style quiz (T/F and calculation) with answers hidden until I reply.
+
+Claude:
+The chart follows.
+
+**1. Increasing r:** Each band needs more rows to match, so $t^r$ shrinks. The curve shifts right and steepens. Fewer false positives, more false negatives.
+
+**2. Increasing b:** More chances to match, so $1-(1-t^r)^b$ grows. The curve shifts left. More candidates, so more false positives and fewer false negatives.
+
+**3. Check (b=20, r=5):**
+- t=0.8: $0.8^5=0.328$, so $1-(1-0.328)^{20}=1-0.672^{20}\approx 1-0.00035=\mathbf{99.965\%}$ ✓
+- t=0.3: $0.3^5=0.00243$, so $1-(0.99757)^{20}\approx\mathbf{4.74\%}$ ✓
+
+**4. Counterexample:** Set b=20, r=5, so the threshold is about 0.55. A pair with t=0.6 is above it, but $0.6^5=0.0778$ gives $P=1-(0.9222)^{20}\approx 80.2\%$. About 20% of such pairs are missed. The threshold is the steepest point, not a guarantee.
+
+---
+
+**Quiz (answers hidden until you reply)**
+
+**Q1 (T/F).** With the total signature length b·r fixed, raising r while lowering b generally reduces false positives.
+
+**Q2 (calc).** b=10, r=4, t=0.5. Compute P(candidate) to 3 decimals.
+
+**Q3 (calc).** b=25, r=4. Approximate threshold $(1/b)^{1/r}$ to 2 decimals, and state how many MinHash values per signature.
+
+Reply with your answers and I'll grade them.
+
+User:
+Question 1: True
+Question 2: 47.55%
+Question 3: 0.45, and 100 MinHash values per signature
+
+Claude:
+All three are correct: 3/3.
+
+- **Q1: True.** Raising r (and lowering b to keep b·r fixed) pushes the threshold up. Example: b=20, r=5 gives about 0.55, while b=10, r=10 gives about 0.79. You get fewer false positives, at the cost of more false negatives.
+- **Q2: 47.55% ✓.** $0.5^4=0.0625$, so $1-(0.9375)^{10}=1-0.5245=0.4755$. I asked for 3 decimals, so the exam-style answer is 0.475 (a quibble, not an error).
+- **Q3: 0.45 and 100 ✓.** $(1/25)^{1/4}=1/\sqrt5\approx0.447$, and $b\cdot r=25\cdot4=100$.
+
+Note that Q2 lands near the middle of the S-curve. At t=0.5 this setup is a coin flip, because the threshold sits at $(1/10)^{1/4}\approx0.56$. That is why the answer is close to 50%.
+
+Want a harder round, say a design question like picking b and r for a target threshold with a false-negative cap?
+
+User:
+That should be all for today! Thank you so much!
