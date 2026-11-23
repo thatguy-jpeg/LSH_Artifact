@@ -1,0 +1,68 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>LSH Banding S-curve</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap">
+<style>
+/* layout: one centered column, three readouts above the chart, sliders below */
+:root{--bg:#f7f8fa;--surface:#ffffff;--fg:#14171f;--muted:#5b6272;--line:#dfe3ea;--curve:#2457d6;--mark:#e0561f;--font:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1218;--surface:#171b23;--fg:#eceff5;--muted:#9aa3b5;--line:#2a303c;--curve:#6b93ff;--mark:#ff8a57;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1218;--surface:#171b23;--fg:#eceff5;--muted:#9aa3b5;--line:#2a303c;--curve:#6b93ff;--mark:#ff8a57;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.reads{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.read{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;min-width:0}
+.read span{display:block;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.read b{display:block;font-size:26px;font-weight:500;font-variant-numeric:tabular-nums;margin-top:2px}
+.read.hot b{color:var(--mark)}
+svg{width:100%;height:auto;display:block;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.ctl{display:grid;grid-template-columns:96px minmax(0,1fr) 48px;align-items:center;gap:12px 14px}
+.ctl label{font-size:14px;color:var(--muted)}
+.ctl output{font-size:14px;font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--curve)}
+input[type=range]:focus-visible{outline:2px solid var(--curve);outline-offset:3px}
+</style>
+<main>
+  <div class="reads">
+    <div class="read"><span>Signature length b·r</span><b id="o-sig">100</b></div>
+    <div class="read"><span>Threshold (1/b)^(1/r)</span><b id="o-th">0.549</b></div>
+    <div class="read hot"><span>P(candidate) at t</span><b id="o-p">99.96%</b></div>
+  </div>
+  <svg id="svg" viewBox="0 0 640 300" role="img" aria-label="S-curve of candidate-pair probability versus pair similarity"><title>LSH S-curve</title></svg>
+  <div class="ctl">
+    <label for="b">Bands b</label><input type="range" id="b" min="1" max="50" step="1" value="20"><output id="v-b">20</output>
+    <label for="r">Rows r</label><input type="range" id="r" min="1" max="15" step="1" value="5"><output id="v-r">5</output>
+    <label for="t">Similarity t</label><input type="range" id="t" min="0" max="1" step="0.01" value="0.8"><output id="v-t">0.80</output>
+  </div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const X0=52,X1=620,Y0=256,Y1=14;
+const sx=t=>X0+t*(X1-X0), sy=p=>Y0-p*(Y0-Y1);
+const P=(t,b,r)=>1-Math.pow(1-Math.pow(t,r),b);
+const NS='http://www.w3.org/2000/svg';
+function el(n,a,txt){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);if(txt!==undefined)e.textContent=txt;return e;}
+function draw(){
+  const b=+$('b').value,r=+$('r').value,t=+$('t').value;
+  const th=Math.pow(1/b,1/r),p=P(t,b,r);
+  $('v-b').textContent=b;$('v-r').textContent=r;$('v-t').textContent=t.toFixed(2);
+  $('o-sig').textContent=b*r;$('o-th').textContent=th.toFixed(3);$('o-p').textContent=(p*100).toFixed(2)+'%';
+  const s=$('svg');while(s.children.length>1)s.removeChild(s.lastChild);
+  [0,0.25,0.5,0.75,1].forEach(v=>{
+    s.appendChild(el('line',{x1:X0,x2:X1,y1:sy(v),y2:sy(v),stroke:'var(--line)','stroke-width':1}));
+    s.appendChild(el('text',{x:X0-8,y:sy(v)+4,'text-anchor':'end','font-size':12,fill:'var(--muted)'},v));
+    s.appendChild(el('text',{x:sx(v),y:Y0+18,'text-anchor':'middle','font-size':12,fill:'var(--muted)'},v));
+  });
+  s.appendChild(el('text',{x:(X0+X1)/2,y:292,'text-anchor':'middle','font-size':12,fill:'var(--muted)'},'Pair similarity t'));
+  s.appendChild(el('text',{x:14,y:(Y0+Y1)/2,'text-anchor':'middle','font-size':12,fill:'var(--muted)',transform:'rotate(-90 14 '+(Y0+Y1)/2+')'},'P(candidate)'));
+  s.appendChild(el('line',{x1:sx(th),x2:sx(th),y1:Y0,y2:Y1,stroke:'var(--muted)','stroke-width':1,'stroke-dasharray':'4 4'}));
+  let d='';for(let i=0;i<=200;i++){const tt=i/200;d+=(i?'L':'M')+sx(tt).toFixed(1)+' '+sy(P(tt,b,r)).toFixed(1);}
+  s.appendChild(el('path',{d:d,fill:'none',stroke:'var(--curve)','stroke-width':2.5,'stroke-linejoin':'round','stroke-linecap':'round'}));
+  s.appendChild(el('line',{x1:sx(t),x2:sx(t),y1:sy(p),y2:Y0,stroke:'var(--mark)','stroke-width':1,'stroke-dasharray':'3 3'}));
+  s.appendChild(el('line',{x1:X0,x2:sx(t),y1:sy(p),y2:sy(p),stroke:'var(--mark)','stroke-width':1,'stroke-dasharray':'3 3'}));
+  s.appendChild(el('circle',{cx:sx(t),cy:sy(p),r:6,fill:'var(--mark)',stroke:'var(--surface)','stroke-width':2}));
+}
+['b','r','t'].forEach(i=>$(i).addEventListener('input',draw));
+draw();
+</script>
+
+</body></html>
